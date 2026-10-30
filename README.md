@@ -12,21 +12,21 @@ PowerShell watchdog that keeps an Antigravity CLI (`agy`) session working throug
 > ## ⭐ Attach mode (recommended)
 > **Keep working in `agy` as usual.** The watchdog watches your `agy` window in the background: you still see the `agy` TUI and can type to the agent at any time.
 >
-> **① Terminal 1** – start `agy` the way you always do and give it the task, the guidelines and the plan:
+> **① Terminal 1** – start `agy` the way you always do:
 >
 > ```powershell
-> cd C:\Projects\my-app
 > agy --dangerously-skip-permissions
 > ```
 >
-> **② Terminal 2** – start the watchdog in the same folder:
+> **② Terminal 2** – start the watchdog:
 >
 > ```powershell
-> cd C:\Projects\my-app
-> pwsh -NoProfile -File C:\Tools\agy-watchdog\agy-watchdog.ps1 -Attach -PlanFile PLAN.md
+> pwsh -NoProfile -File C:\Tools\agy-watchdog\agy-watchdog.ps1 -Attach
 > ```
 >
 > **That's it.** When `agy` has been idle for 10 minutes, or when the quota banner is shown and the reset time has passed, the watchdog types a continue prompt into the `agy` window for you. Press `Ctrl+C` in terminal 2 to stop watching.
+>
+> *Optional:* run it from the project folder with `-PlanFile PLAN.md` to point the agent to its plan file and catch a premature "done" (unchecked `- [ ]` items left).
 
 > [!NOTE]
 > **Requires PowerShell 7.2+** (`pwsh`). It does not run in Windows PowerShell 5.1.
@@ -70,7 +70,7 @@ It acts only when the `agy` screen hasn't changed for a while (the agent isn't w
 | Quota banner with `Resets in XhYmZs` | Waits until the reset time + 2 min, then types the continue prompt |
 | Quota banner without a reset time | Waits `-QuotaWaitMinutes`, then types the continue prompt |
 | Unchanged for `-IdleMinutes` | Types the continue prompt |
-| A line `ALL_PLAN_STEPS_DONE` | Stops. If the plan still has unchecked `- [ ]` items, pushes back once first |
+| A line `ALL_PLAN_STEPS_DONE` | Stops. With `-PlanFile`, if the plan still has unchecked `- [ ]` items, pushes back once first |
 | A line `NEED_HUMAN: <reason>` | Stops and shows the reason |
 | Typed prompt changes nothing, 3 times in a row | Stops |
 | `agy` exits | Stops |
@@ -100,14 +100,14 @@ Without `-Conversation`, the most recent `agy` conversation is continued (`--con
 
 - Windows 10 / 11, PowerShell 7.2+
 - Antigravity CLI: `agy` on `PATH` or in `%LOCALAPPDATA%\agy\bin`, signed in
-- A plan file in the project (checkboxes `- [ ]` / `- [x]` recommended)
+- A plan file in the project (checkboxes `- [ ]` / `- [x]` recommended): required in headless mode, optional in attach mode
 - Git (optional, headless mode): enables the no-progress detection
 
 ## Parameters
 
 | Parameter | Mode | Default | Description |
 |---|---|---|---|
-| `-PlanFile` | both | (required) | Plan file path, relative to `-WorkDir` |
+| `-PlanFile` | both | required in headless, optional in attach | Plan file path, relative to `-WorkDir` |
 | `-WorkDir` | both | current directory | Project directory `agy` works in |
 | `-Attach` | attach | off | Watch an interactive `agy` window instead of running `agy` headless |
 | `-AgyPid` | attach | the only interactive `agy` | Process ID of the `agy` to watch |

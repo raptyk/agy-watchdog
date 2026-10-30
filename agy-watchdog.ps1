@@ -19,6 +19,9 @@
     Close the interactive agy session for this project before starting (two clients on one conversation conflict).
 
 .EXAMPLE
+    pwsh -NoProfile -File agy-watchdog.ps1 -Attach
+
+.EXAMPLE
     pwsh -NoProfile -File agy-watchdog.ps1 -Attach -WorkDir C:\Projekty\my-app -PlanFile PLAN.md
 
 .EXAMPLE
@@ -29,8 +32,7 @@ param(
     # Project directory agy works in.
     [string] $WorkDir = (Get-Location).Path,
 
-    # Plan file path relative to WorkDir (the agent's saved work plan).
-    [Parameter(Mandatory)]
+    # Plan file path relative to WorkDir (the agent's saved work plan). Required in headless mode, optional in attach mode.
     [string] $PlanFile,
 
     # Attach mode: watch an interactive agy window instead of running agy headless.
@@ -114,8 +116,9 @@ Re-read the plan. Finish the remaining steps, or mark them as done if they reall
 
 # Attach-mode prompts are typed into the agy input box, so they are single lines (Enter submits) and spell the
 # markers out instead of quoting them: the echoed prompt on screen must never look like a marker line.
-$AttachContinuePrompt = "Continue your work according to the plan in $PlanFile and all the guidelines you were given earlier. " +
-    'Do not stop after a step and do not ask whether to continue: go straight on to the next step of the plan and keep the plan file up to date. ' +
+$AttachPlanReference = if ($PlanFile) { "the plan in $PlanFile" } else { 'your plan' }
+$AttachContinuePrompt = "Continue your work according to $AttachPlanReference and all the guidelines you were given earlier. " +
+    'Do not stop after a step and do not ask whether to continue: go straight on to the next step of the plan and keep the plan up to date. ' +
     'Only when EVERY step is finished and verified, end your answer with a line containing only the words ALL, PLAN, STEPS and DONE joined with underscores. ' +
     'If you are truly blocked and need a human decision, end with a line starting with the words NEED and HUMAN joined with an underscore, then a colon and the reason.'
 
@@ -340,6 +343,7 @@ function Get-AgyPath
 
 function Test-PlanHasOpenItems
 {
+    if (-not $PlanFile) { return $false }
     $path = Join-Path $WorkDir $PlanFile
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $false }
     return [bool](Select-String -LiteralPath $path -Pattern '^\s*[-*]\s+\[ \]' -Quiet)
@@ -567,15 +571,17 @@ function Start-AttachMode
         '-AttachWorker',
         '-AgyPid', $agyId,
         '-WorkDir', (ConvertTo-ProcessArgument $WorkDir),
-        '-PlanFile', (ConvertTo-ProcessArgument $PlanFile),
         '-IdleMinutes', $IdleMinutes,
         '-PollSeconds', $PollSeconds,
         '-MaxNudges', $MaxNudges,
         '-QuotaWaitMinutes', $QuotaWaitMinutes,
         '-LogFile', (ConvertTo-ProcessArgument $LogFile)
-    ) -join ' '
+    )
+    if ($PlanFile) { $workerArgs += @('-PlanFile', (ConvertTo-ProcessArgument $PlanFile)) }
+    $workerArgs = $workerArgs -join ' '
 
-    Write-Log "Watchdog started (attach). agy PID: $agyId  WorkDir: $WorkDir  Plan: $PlanFile  Log: $LogFile"
+    $planInfo = if ($PlanFile) { "  Plan: $PlanFile" } else { '' }
+    Write-Log "Watchdog started (attach). agy PID: $agyId  WorkDir: $WorkDir$planInfo  Log: $LogFile"
     Write-Host 'Keep working in the agy window as usual. Press Ctrl+C here to stop watching.' -ForegroundColor Cyan
 
     # The worker runs hidden, because attaching to the agy console requires a process without a console of its own.
@@ -749,7 +755,11 @@ function Start-AttachWorker
 # --- entry point ---------------------------------------------------------------------------------
 
 $WorkDir = (Resolve-Path -LiteralPath $WorkDir).Path
-if (-not (Test-Path -LiteralPath (Join-Path $WorkDir $PlanFile) -PathType Leaf))
+if (-not $PlanFile -and -not ($Attach -or $AttachWorker))
+{
+    throw 'Headless mode needs -PlanFile. Use -Attach to watch an interactive agy without a plan file.'
+}
+if ($PlanFile -and -not (Test-Path -LiteralPath (Join-Path $WorkDir $PlanFile) -PathType Leaf))
 {
     throw "Plan file not found: $(Join-Path $WorkDir $PlanFile)"
 }
