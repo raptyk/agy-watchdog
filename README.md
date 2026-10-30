@@ -3,8 +3,29 @@
 PowerShell watchdog that keeps an Antigravity CLI (`agy`) session working through its saved plan, nudging it to continue whenever it stops and resuming automatically once the quota resets.
 
 > [!IMPORTANT]
+> **The watchdog replaces the interactive `agy` window, it does not watch it.**
+> While it runs, `agy` works headless (`agy --print`): you don't see the `agy` TUI and you can't type to the agent.
+> The console shows only the watchdog status; full agent responses go to the log file.
+
+## Quick start
+
+1. Start `agy` as usual and give it the task, the guidelines and the plan:
+   ```powershell
+   agy --dangerously-skip-permissions
+   ```
+2. Exit `agy` (`/exit`).
+3. In the same terminal, start the watchdog. It continues the same conversation with its full context:
+   ```powershell
+   pwsh -NoProfile -File .\agy-watchdog.ps1 -WorkDir "C:\Projects\my-app" -PlanFile "PLAN.md"
+   ```
+4. To talk to the agent again, stop the watchdog (`Ctrl+C`) and resume the conversation interactively:
+   ```powershell
+   agy -c --dangerously-skip-permissions
+   ```
+
+> [!NOTE]
 > **Requires PowerShell 7.2+** (`pwsh`). It does not run in Windows PowerShell 5.1.
-> Close the interactive `agy` session for the project before starting the watchdog: two clients on one conversation conflict.
+> Never run the watchdog and an interactive `agy` on the same conversation at the same time: two clients on one conversation conflict.
 
 ## Why
 
