@@ -6,29 +6,35 @@ PowerShell watchdog that keeps an Antigravity CLI (`agy`) session working throug
 
 ---
 
-## 🚀 Quick start
+# 🚀 Quick start
 
-### ⭐ Attach mode (recommended): keep working in `agy` as usual
+> [!TIP]
+> ## ⭐ Attach mode (recommended)
+> **Keep working in `agy` as usual.** The watchdog watches your `agy` window in the background: you still see the `agy` TUI and can type to the agent at any time.
+>
+> **① Terminal 1** – start `agy` the way you always do and give it the task, the guidelines and the plan:
+>
+> ```powershell
+> cd C:\Projects\my-app
+> agy --dangerously-skip-permissions
+> ```
+>
+> **② Terminal 2** – start the watchdog in the same folder:
+>
+> ```powershell
+> cd C:\Projects\my-app
+> pwsh -NoProfile -File C:\Tools\agy-watchdog\agy-watchdog.ps1 -Attach -PlanFile PLAN.md
+> ```
+>
+> **That's it.** When `agy` has been idle for 10 minutes, or when the quota banner is shown and the reset time has passed, the watchdog types a continue prompt into the `agy` window for you. Press `Ctrl+C` in terminal 2 to stop watching.
 
-The watchdog watches your `agy` window in the background. You still see the `agy` TUI and can type to the agent at any time.
+> [!NOTE]
+> **Requires PowerShell 7.2+** (`pwsh`). It does not run in Windows PowerShell 5.1.
 
-**Terminal 1** – start `agy` the way you always do and give it the task, the guidelines and the plan:
+<details>
+<summary><b>Headless mode (fallback): the watchdog runs <code>agy</code> itself</b> – click to expand</summary>
 
-```powershell
-cd C:\Projects\my-app
-agy --dangerously-skip-permissions
-```
-
-**Terminal 2** – start the watchdog:
-
-```powershell
-cd C:\Projects\my-app
-pwsh -NoProfile -File C:\Tools\agy-watchdog\agy-watchdog.ps1 -Attach -PlanFile PLAN.md
-```
-
-That's it. When `agy` has been idle for 10 minutes, or when the quota banner is shown and the reset time has passed, the watchdog types a continue prompt into the `agy` window for you. Press `Ctrl+C` in terminal 2 to stop watching.
-
-### Headless mode (fallback): the watchdog runs `agy` itself
+<br>
 
 Use it when attach mode doesn't fit (for example when typing into the `agy` window has no effect after an `agy` update). The watchdog resumes the conversation in print mode (`agy --print`), round after round. **You don't see the `agy` TUI and can't type to the agent** while it runs; full agent responses go to the log.
 
@@ -39,8 +45,7 @@ Use it when attach mode doesn't fit (for example when typing into the `agy` wind
    ```
 3. To talk to the agent again, stop the watchdog (`Ctrl+C`) and run `agy -c --dangerously-skip-permissions`.
 
-> [!NOTE]
-> **Requires PowerShell 7.2+** (`pwsh`). It does not run in Windows PowerShell 5.1.
+</details>
 
 ---
 
